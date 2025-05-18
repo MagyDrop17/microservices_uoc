@@ -24,4 +24,6 @@ public final class CreateDigitalItemRequest {
 	
 	@NotBlank
     private final String link;
+
+
 }

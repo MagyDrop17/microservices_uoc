@@ -3,6 +3,7 @@ package edu.uoc.epcsd.productcatalog.application.rest;
 
 import edu.uoc.epcsd.productcatalog.application.rest.request.CreateItemRequest;
 import edu.uoc.epcsd.productcatalog.domain.Item;
+import edu.uoc.epcsd.productcatalog.domain.ItemStatus;
 import edu.uoc.epcsd.productcatalog.domain.service.ItemService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -73,4 +74,25 @@ public class ItemRESTController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The specified product id " + createItemRequest.getProductId() + " does not exist.", e);
         }
     }
+
+    @GetMapping("/by-product/{productId}")
+    @ResponseStatus(HttpStatus.OK)
+    public List<Item> getItemsByProductId(@PathVariable @NotNull Long productId) {
+        // Funcio per a obtenir els items d'un producte
+        log.trace("getItemsByProductId for productId={}", productId);
+
+        // Comprovem que el producte existeix
+        return itemService.findByProductId(productId);
+    }
+
+    @PutMapping("/{serialNumber}/status")
+    public ResponseEntity<Void> changeItemStatus(@PathVariable @NotBlank String serialNumber,
+                                                 @RequestParam ItemStatus status) {
+        // Funcio per a canviar l'estat d'un item
+        itemService.changeItemStatus(serialNumber, status);
+
+        // Comprovem que l'item existeix
+        return ResponseEntity.ok().build();
+    }
+
 }

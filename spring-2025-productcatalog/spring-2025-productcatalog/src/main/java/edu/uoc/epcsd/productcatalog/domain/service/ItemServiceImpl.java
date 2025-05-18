@@ -3,6 +3,7 @@ package edu.uoc.epcsd.productcatalog.domain.service;
 import edu.uoc.epcsd.productcatalog.domain.Item;
 import edu.uoc.epcsd.productcatalog.domain.ItemStatus;
 import edu.uoc.epcsd.productcatalog.domain.repository.ItemRepository;
+import edu.uoc.epcsd.productcatalog.domain.repository.ProductRepository;
 import edu.uoc.epcsd.productcatalog.infrastructure.kafka.KafkaConstants;
 import edu.uoc.epcsd.productcatalog.infrastructure.kafka.ProductMessage;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,8 @@ public class ItemServiceImpl implements ItemService {
     private final ItemRepository itemRepository;
 
     private final KafkaTemplate<String, ProductMessage> productKafkaTemplate;
+
+    private final ProductRepository productRepository;
 
     @Override
     public List<Item> findAllItems() {
@@ -64,6 +67,31 @@ public class ItemServiceImpl implements ItemService {
         }
 
         return item;
+    }
+
+    @Override
+    public void changeItemStatus(String serialNumber, ItemStatus newStatus) {
+        Item item = itemRepository.findBySerialNumber(serialNumber)
+                .orElseThrow(() -> new IllegalArgumentException("Item no trobat: " + serialNumber)); // Llançar excepció si no es troba l'element
+
+        item.setStatus(newStatus);  // Actualitzar l'estat de l'element
+        item = itemRepository.save(item); // Desar l'element actualitzat
+
+        if (newStatus == ItemStatus.AVAILABLE) { // Enviar missatge només si l'estat és "AVAILABLE"
+
+            final String serial = item.getSerialNumber(); // Variable local per a la lambda per evitar problemes de concurrència
+
+            productRepository.findProductById(item.getProductId()).ifPresent(product -> {
+                productKafkaTemplate.send(
+                        KafkaConstants.PRODUCT_TOPIC + KafkaConstants.SEPARATOR + KafkaConstants.UNIT_AVAILABLE,
+                        ProductMessage.builder()
+                                .productId(product.getId())
+                                .productName(product.getName())
+                                .serialNumber(serial) // Afegir el número de sèrie a la informació del missatge
+                                .build()
+                );
+            });
+        }
     }
 
     @Override

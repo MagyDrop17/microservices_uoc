@@ -46,7 +46,32 @@ public class CategoryRESTController {
     // TODO: add the code for the missing system operations here: 
     // use the corresponding mapping HTTP request annotation with the parameter: "/search"
     // and call the method public ResponseEntity<List<Category>> findCategoriesByCriteria(@NotNull FindCategoriesByCriteria findCategoriesCriteria) 
-    // which call the corresponding categoryService method 
+    // which call the corresponding categoryService method
+    @GetMapping("/search")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<List<Category>> findCategoriesByCriteria(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) Long parentId
+    )
+    {
+        log.info("findCategoriesByCriteria");
+
+        // Creem un objecte FindCategoriesByCriteria amb els criteris de cerca
+        FindCategoriesByCriteria findCategoriesCriteria = new FindCategoriesByCriteria(name, description, parentId);
+
+        // Cridem al servei per obtenir les categories que coincideixen amb els criteris
+        List<Category> categories = categoryService.findCategoriesByExample(findCategoriesCriteria.toCategory());
+
+        // Comprovem si s'han trobat categories
+        if (categories.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Retornem les categories trobades
+        return ResponseEntity.ok(categories);
+    }
+
 
     @PostMapping
     public ResponseEntity<Long> createCategory(@RequestBody @NotNull @Valid CreateCategoryRequest createCategoryRequest) {

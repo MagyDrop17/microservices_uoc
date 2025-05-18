@@ -11,5 +11,7 @@ import lombok.*;
 public final class ProductMessage {
 
     private final Long productId;
+    private String productName; // Nom del producte
+    private String serialNumber; // Número de sèrie
 
 }

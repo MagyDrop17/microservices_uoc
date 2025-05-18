@@ -2,6 +2,7 @@ package edu.uoc.epcsd.productcatalog.infrastructure.repository.jpa;
 
 public enum ItemStatus {
 
+    AVAILABLE,  // 	Unitat lliure i disponible per llogar
     OPERATIONAL,
     NON_OPERATIONAL;
 

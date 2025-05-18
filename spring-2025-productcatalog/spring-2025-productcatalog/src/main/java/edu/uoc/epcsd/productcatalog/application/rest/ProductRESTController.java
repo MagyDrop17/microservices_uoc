@@ -19,6 +19,7 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.net.URI;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Log4j2
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -48,7 +49,34 @@ public class ProductRESTController {
     // TODO: add the code for the missing system operations here: 
     // use the corresponding mapping HTTP request annotation with the parameter: "/search"
     // and call the method findProductsByCriteria(FindProductsByCriteria findProductsCriteria)
-    // which call the corresponding findProductsByExample method 
+    // which call the corresponding findProductsByExample method
+    @GetMapping("/search")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<List<GetProductResponse>> findProductsByCriteria(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) Long categoryId) {
+
+        // Creem els criteris de cerca a partir dels paràmetres de la petició
+        FindProductsByCriteria criteria = new FindProductsByCriteria(
+                name,
+                categoryId
+        );
+
+        // Busquem els productes que coincideixen amb els criteris de cerca
+        List<Product> products = productService.findProductsByExample(criteria.toProduct());
+
+        // Si no hi ha cap producte que coincideixi amb els criteris de cerca, retornem un 404
+        if (products.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Si hi ha productes que coincideixen amb els criteris de cerca, els retornem en el cos de la resposta
+        return ResponseEntity.ok(
+                products.stream()
+                        .map(GetProductResponse::fromDomain)
+                        .collect(Collectors.toList())
+        );
+    }
 
     @PostMapping
     public ResponseEntity<Long> createProduct(@RequestBody @NotNull @Valid CreateProductRequest createProductRequest) {
@@ -81,5 +109,17 @@ public class ProductRESTController {
     // use the corresponding mapping HTTP request annotation with the parameter: "/{productId}"
     // and call the method removeProduct(@PathVariable @NotNull Long productId)
     // which call the corresponding deleteProduct method 
+    @DeleteMapping("/{productId}")
+    public ResponseEntity<Void> removeProduct(@PathVariable @NotNull Long productId) {
+        log.trace("removeProduct");
+        log.trace("Removing product " + productId);
+
+        try {
+            productService.deleteProduct(productId);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The specified product " + productId + " does not exist.", e);
+        }
+    }
 
 }
